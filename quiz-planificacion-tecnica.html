@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Planificación Técnica & No Funcional</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 16px; }
+        .content { padding: 30px; }
+        .question {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        .question-number { color: #667eea; font-weight: 700; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+        .option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        .radio-circle {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            margin-right: 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        .option.selected .radio-circle {
+            border-color: #667eea;
+            background: #667eea;
+            box-shadow: inset 0 0 0 3px white;
+        }
+        .option-text {
+            flex: 1;
+            font-size: 16px;
+            color: #4a5568;
+        }
+        .option.selected {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+        .option.correct-answer {
+            background: #c6f6d5 !important;
+            border-color: #48bb78 !important;
+            font-weight: 600;
+        }
+        .option.wrong-answer {
+            background: #fed7d7 !important;
+            border-color: #f56565 !important;
+        }
+        .option.disabled { cursor: not-allowed; pointer-events: none; }
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-top: 20px;
+        }
+        .submit-btn:hover { transform: translateY(-2px); }
+        .submit-btn:active { transform: translateY(0); }
+        .results {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 2px solid #e2e8f0;
+            margin-top: 30px;
+        }
+        .results.show { display: block; }
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        .score-label { font-size: 16px; font-weight: 400; margin-top: 5px; }
+        .result-message { font-size: 24px; font-weight: 600; color: #2d3748; margin-bottom: 15px; }
+        .result-description { font-size: 16px; color: #718096; margin-bottom: 30px; line-height: 1.6; }
+        .action-buttons { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-share { background: #48bb78; color: white; }
+        .btn-share:hover { background: #38a169; }
+        .btn-retry { background: #667eea; color: white; }
+        .btn-retry:hover { background: #5a67d8; }
+        .share-notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+        }
+        .share-notification.show { display: block; animation: slideIn 0.3s ease; }
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 22px; }
+            .question-text { font-size: 16px; }
+            .score-circle { width: 150px; height: 150px; font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Quiz: Planificación Técnica & No Funcional</h1>
+            <p>Pon a prueba tus conocimientos sobre requerimientos no funcionales y planificación técnica</p>
+        </div>
+        <div class="content">
+            <div id="quizContainer"></div>
+            <div class="results" id="results">
+                <div class="score-circle">
+                    <div id="scoreValue">0</div>
+                    <div class="score-label">de 15</div>
+                </div>
+                <div class="result-message" id="resultMessage"></div>
+                <div class="result-description" id="resultDescription"></div>
+                <div class="action-buttons">
+                    <div class="btn btn-share" id="shareBtn">📤 Compartir Resultado</div>
+                    <div class="btn btn-retry" id="retryBtn">🔄 Intentar de Nuevo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="share-notification" id="shareNotification">✓ Enlace copiado al portapapeles</div>
+
+    <script>
+        const questions = [
+            { question: "¿Cuál es el objetivo principal de los requerimientos no funcionales en la planificación?", options: ["Definir cuántos desarrolladores participan", "Establecer criterios de calidad y comportamiento del sistema", "Determinar los colores del frontend", "Organizar reuniones con stakeholders"], correct: 1 },
+            { question: "¿Qué aspecto busca garantizar la concurrencia en un sistema?", options: ["Que el sistema tenga más pantallas", "Que múltiples operaciones puedan ejecutarse sin interferirse", "Que los desarrolladores trabajen en paralelo", "Que las APIs tengan documentación"], correct: 1 },
+            { question: "¿Qué métrica es clave para evaluar la salud de una API?", options: ["Cantidad de commits", "Tiempo de respuesta y tasa de errores", "Número de endpoints", "Colores utilizados en el diseño"], correct: 1 },
+            { question: "¿Cuál es un indicador de falla en middlewares necesarios?", options: ["Un aumento en notas de diseño", "Caída sistemática en la cadena de requests", "Incremento de features", "Aprobación del equipo de producto"], correct: 1 },
+            { question: "¿Qué se busca con el versionado de APIs?", options: ["Evitar que los desarrolladores cambien código", "Asegurar compatibilidad y evolución ordenada", "Aumentar la cantidad de endpoints", "Reducir reuniones"], correct: 1 },
+            { question: "¿Qué validan el readiness y el liveness de un servicio?", options: ["Si tiene soporte multiplataforma", "Si puede escalar horizontalmente", "Si está listo para recibir tráfico y si sigue vivo", "Si tiene buena cobertura de tests"], correct: 2 },
+            { question: "¿Cuál es el propósito principal de un Design Doc?", options: ["Registrar fechas de entregas", "Documentar decisiones técnicas con sus alternativas", "Listar participantes del proyecto", "Crear diagramas estéticos"], correct: 1 },
+            { question: "¿Cómo ayudan los brokers a una arquitectura?", options: ["Hacen más rápido el frontend", "Mejoran el desacoplamiento entre servicios", "Impiden el escalamiento del sistema", "Eliminan la necesidad de APIs"], correct: 1 },
+            { question: "¿Qué implica una integración efectiva con frontends?", options: ["Tener muchas funcionalidades", "Mantener contratos estables y respuestas consistentes", "Reducir el número de pantallas", "Aumentar la velocidad de desarrollo"], correct: 1 },
+            { question: "¿Qué es una planificación de features efectiva?", options: ["Crear muchas historias en un sprint", "Priorizar, dividir y definir impactos técnicos reales", "Eliminar tareas no funcionales", "Depender solo del equipo de UX"], correct: 1 },
+            { question: "¿Cuál es el objetivo de un Pre-Mortem?", options: ["Celebrar el inicio del proyecto", "Imaginar posibles fallas y mitigarlas antes de que ocurran", "Decidir el diseño visual", "Determinar la fecha de lanzamiento"], correct: 1 },
+            { question: "¿Por qué es importante mitigar deuda técnica?", options: ["Para entregar features más lindas", "Para evitar que el sistema se vuelva frágil y difícil de escalar", "Para cambiar de arquitectura constantemente", "Para disminuir reuniones"], correct: 1 },
+            { question: "¿Qué destaca un caso de éxito en planificación técnica?", options: ["Que el proyecto tuvo pocas reuniones", "Que las decisiones técnicas soportaron el crecimiento esperado", "Que el frontend se desarrolló muy rápido", "Que se usaron muchas tecnologías nuevas"], correct: 1 },
+            { question: "¿Cuál es el impacto del costo-beneficio de la escalabilidad y resiliencia?", options: ["Todas las decisiones deben ser baratas", "Debe equilibrarse inversión con valor técnico y de negocio", "Debe evitarse cualquier gasto en infraestructura", "No tiene impacto real"], correct: 1 },
+            { question: "¿Qué rol cumple Fury en la planificación de features?", options: ["Reemplazar decisiones técnicas", "Dar lineamientos, estándares y mejores prácticas para construir servicios robustos", "Reducir tiempos de desarrollo sin análisis", "Crear interfaces visuales"], correct: 1 }
+        ];
+
+        let userAnswers = {};
+        let quizSubmitted = false;
+
+        function init() {
+            renderQuiz();
+            document.getElementById('shareBtn').onclick = shareResults;
+            document.getElementById('retryBtn').onclick = retryQuiz;
+        }
+
+        function renderQuiz() {
+            let html = '';
+            questions.forEach((q, qIdx) => {
+                html += '<div class="question"><div class="question-text"><span class="question-number">' + (qIdx + 1) + '.</span> ' + q.question + '</div><div class="options" id="opts-' + qIdx + '">';
+                q.options.forEach((opt, oIdx) => {
+                    html += '<div class="option" id="q' + qIdx + 'o' + oIdx + '"><div class="radio-circle"></div><div class="option-text">' + String.fromCharCode(65 + oIdx) + '. ' + opt + '</div></div>';
+                });
+                html += '</div></div>';
+            });
+            html += '<div class="submit-btn" id="submitBtn">Enviar Respuestas</div>';
+            document.getElementById('quizContainer').innerHTML = html;
+
+            questions.forEach((q, qIdx) => {
+                q.options.forEach((opt, oIdx) => {
+                    document.getElementById('q' + qIdx + 'o' + oIdx).onclick = function() { selectOption(qIdx, oIdx); };
+                });
+            });
+            document.getElementById('submitBtn').onclick = submitQuiz;
+        }
+
+        function selectOption(qIdx, oIdx) {
+            if (quizSubmitted) return;
+            userAnswers[qIdx] = oIdx;
+            const opts = document.getElementById('opts-' + qIdx).querySelectorAll('.option');
+            opts.forEach(o => o.classList.remove('selected'));
+            document.getElementById('q' + qIdx + 'o' + oIdx).classList.add('selected');
+        }
+
+        function submitQuiz() {
+            if (Object.keys(userAnswers).length < questions.length) {
+                alert('Por favor, responde todas las preguntas antes de enviar.');
+                return;
+            }
+            quizSubmitted = true;
+            let score = 0;
+            questions.forEach((q, qIdx) => {
+                const correctOpt = document.getElementById('q' + qIdx + 'o' + q.correct);
+                correctOpt.classList.add('correct-answer');
+                if (userAnswers[qIdx] !== q.correct) {
+                    document.getElementById('q' + qIdx + 'o' + userAnswers[qIdx]).classList.add('wrong-answer');
+                } else {
+                    score++;
+                }
+                document.getElementById('opts-' + qIdx).querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+            });
+            document.getElementById('submitBtn').style.display = 'none';
+            showResults(score);
+            setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        }
+
+        function showResults(score) {
+            document.getElementById('results').classList.add('show');
+            document.getElementById('scoreValue').textContent = score;
+            const pct = (score / questions.length) * 100;
+            let msg, desc;
+            if (pct >= 90) { msg = "🏆 ¡Excelente!"; desc = "Dominas completamente los conceptos de planificación técnica y requerimientos no funcionales. ¡Felicitaciones!"; }
+            else if (pct >= 70) { msg = "👍 ¡Muy Bien!"; desc = "Tienes un buen entendimiento de los conceptos. Con un poco más de práctica serás un experto."; }
+            else if (pct >= 50) { msg = "📚 Bien Encaminado"; desc = "Tienes conocimientos básicos, pero hay áreas que deberías reforzar para mejorar tu expertise."; }
+            else { msg = "💪 Sigue Aprendiendo"; desc = "Hay mucho por descubrir. Te recomendamos revisar los conceptos y volver a intentarlo."; }
+            document.getElementById('resultMessage').textContent = msg;
+            document.getElementById('resultDescription').textContent = desc;
+        }
+
+        function shareResults() {
+            const score = document.getElementById('scoreValue').textContent;
+            const pct = Math.round((score / questions.length) * 100);
+            const txt = '¡Obtuve ' + score + ' de 15 (' + pct + '%) en el Quiz de Planificación Técnica & No Funcional! 🎯\n\n¿Puedes superarme? Prueba aquí: ' + window.location.href;
+            if (navigator.share) {
+                navigator.share({ title: 'Mi resultado en el Quiz', text: txt, url: window.location.href }).catch(e => {});
+            } else {
+                navigator.clipboard.writeText(txt).then(() => {
+                    const notif = document.getElementById('shareNotification');
+                    notif.classList.add('show');
+                    setTimeout(() => notif.classList.remove('show'), 3000);
+                }).catch(e => alert('No se pudo copiar'));
+            }
+        }
+
+        function retryQuiz() {
+            userAnswers = {};
+            quizSubmitted = false;
+            document.getElementById('results').classList.remove('show');
+            renderQuiz();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
